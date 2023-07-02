@@ -1,0 +1,40 @@
+# Configuration for Cog ⚙️
+# Reference: https://github.com/replicate/cog/blob/main/docs/yaml.md
+
+build:
+  gpu: true
+  cuda: "11.8"
+  system_packages:
+    - "ffmpeg"
+  python_version: "3.10"
+  python_packages:
+    - "torch==2.0.1"
+    - "torchaudio==2.0.2"
+    - "demucs==4.0.0"
+    - ipython
+  run:
+    # this is not necesary but saving the models in the image will make the inference faster
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/f7e0c4bc-ba3fe64a.th" "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/f7e0c4bc-ba3fe64a.th"  
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/955717e8-8726e21a.th" "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/955717e8-8726e21a.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/d12395a8-e57c48e6.th" "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/d12395a8-e57c48e6.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/92cfc3b6-ef3bcb9c.th" "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/92cfc3b6-ef3bcb9c.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/04573f0d-f3cf25b2.th" "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/04573f0d-f3cf25b2.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/5c90dfd2-34c22ccb.th" "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/5c90dfd2-34c22ccb.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/75fc33f5-1941ce65.th" "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/75fc33f5-1941ce65.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/0d19c1c6-0f06f20e.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/0d19c1c6-0f06f20e.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/7ecf8ec1-70f50cc9.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/7ecf8ec1-70f50cc9.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/c511e2ab-fe698775.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/c511e2ab-fe698775.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/7d865c68-3d5dd56b.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/7d865c68-3d5dd56b.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/6b9c2ca1-3fd82607.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/6b9c2ca1-3fd82607.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/b72baf4e-8778635e.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/b72baf4e-8778635e.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/42e558d4-196e0e1b.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/42e558d4-196e0e1b.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/305bc58f-18378783.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/305bc58f-18378783.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/e51eebcc-c1b80bdd.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/e51eebcc-c1b80bdd.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/a1d90b5c-ae9d2452.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/a1d90b5c-ae9d2452.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/5d2d6c55-db83574e.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/5d2d6c55-db83574e.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/cfa93e08-61801ae1.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/cfa93e08-61801ae1.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/83fc094f-4a16d450.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/83fc094f-4a16d450.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/464b36d7-e5a9386e.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/464b36d7-e5a9386e.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/14fc6a69-a89dd0ee.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/14fc6a69-a89dd0ee.th"
+    - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/7fd6ef75-a905dd85.th" "https://dl.fbaipublicfiles.com/demucs/mdx_final/7fd6ef75-a905dd85.th"
+predict: "predict.py:Predictor"
