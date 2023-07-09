@@ -12,6 +12,7 @@ build:
     - "torchaudio==2.0.2"
     - "demucs==4.0.0"
     - ipython
+    - "yt-dlp"
   run:
     # this is not necesary but saving the models in the image will make the inference faster
     - mkdir -p /root/.cache/torch/hub/checkpoints/ && wget --output-document "/root/.cache/torch/hub/checkpoints/f7e0c4bc-ba3fe64a.th" "https://dl.fbaipublicfiles.com/demucs/hybrid_transformer/f7e0c4bc-ba3fe64a.th"  

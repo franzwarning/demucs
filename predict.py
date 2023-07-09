@@ -3,8 +3,11 @@
 
 from typing import Optional
 import torch
+import tempfile
 from cog import BaseModel, BasePredictor, Input, Path
-
+import subprocess
+import sys
+import yt_dlp as youtube_dl
 from demucs.apply import apply_model
 from demucs.audio import save_audio
 from demucs.pretrained import get_model
@@ -24,6 +27,24 @@ MODELS = [
 ]
 
 
+ydl_opts = {
+    'format': 'bestaudio/best',
+}
+
+def upgrade(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package, "--upgrade"])
+
+class FilenameCollectorPP(youtube_dl.postprocessor.common.PostProcessor):
+    def __init__(self):
+        super(FilenameCollectorPP, self).__init__(None)
+        self.filenames = []
+
+    def run(self, information):
+        self.filenames.append(information['filepath'])
+        return [], information
+
+
+
 class ModelOutput(BaseModel):
     vocals: Optional[Path]
     bass: Optional[Path]
@@ -37,12 +58,13 @@ class Predictor(BasePredictor):
     def setup(self):
         """Load the model into memory to make running multiple predictions efficient"""
         self.models = {k: get_model(k) for k in MODELS}
+        upgrade('yt-dlp')
 
     def predict(
         self,
-        audio: Path = Input(description="Input audio"),
+        audio_url: str = Input(description="Audio url", default=None),
         model_name: str = Input(
-            description="Choose a model", choices=MODELS, default="htdemucs"
+            description="Choose a model", choices=MODELS, default="mdx_extra_q"
         ),
         stem: str = Input(
             default=None,
@@ -71,12 +93,31 @@ class Predictor(BasePredictor):
             default=False,
         ),
         output_format: str = Input(
-            default="mp3",
+            default="wav",
             choices=["mp3", "wav", "flac"],
             description="Choose the output format",
         ),
     ) -> ModelOutput:
         """Run a single prediction on the model"""
+
+        ####
+        # YOUTUBE DL
+        ####        
+        ytdl_temp_dir = tempfile.mkdtemp()
+
+        ydl = youtube_dl.YoutubeDL({
+            **ydl_opts,
+            'outtmpl':f"{ytdl_temp_dir}/%(title)s.%(ext)s",
+        })
+
+        info_dict = ydl.extract_info(audio_url, download=False)
+        video_title = info_dict.get('title', None)
+        # yield Result(file_name=video_title)
+
+
+        filename_collector = FilenameCollectorPP()
+        ydl.add_post_processor(filename_collector)
+        ydl.download([audio_url])            
 
         model = self.models[model_name]
         if stem is not None:
@@ -84,7 +125,7 @@ class Predictor(BasePredictor):
                 stem in model.sources
             ), f"stem {stem} is not in selected model. Supported stems in {model_name} are {model.sources}"
 
-        wav = load_track(str(audio), model.audio_channels, model.samplerate)
+        wav = load_track(Path(filename_collector.filenames[0]), model.audio_channels, model.samplerate)
         ref = wav.mean(0)
         wav = (wav - ref.mean()) / ref.std()
         sources = apply_model(
