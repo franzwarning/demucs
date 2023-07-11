@@ -1,7 +1,7 @@
 # Prediction interface for Cog ⚙️
 # https://github.com/replicate/cog/blob/main/docs/python.md
 
-from typing import Optional
+from typing import Optional, Iterator
 import torch
 import tempfile
 from cog import BaseModel, BasePredictor, Input, Path
@@ -49,9 +49,8 @@ class ModelOutput(BaseModel):
     vocals: Optional[Path]
     bass: Optional[Path]
     drums: Optional[Path]
-    guitar: Optional[Path]
-    piano: Optional[Path]
     other: Optional[Path]
+    title: Optional[str]
 
 
 class Predictor(BasePredictor):
@@ -97,7 +96,7 @@ class Predictor(BasePredictor):
             choices=["mp3", "wav", "flac"],
             description="Choose the output format",
         ),
-    ) -> ModelOutput:
+    ) -> Iterator[ModelOutput]:
         """Run a single prediction on the model"""
 
         ####
@@ -112,7 +111,7 @@ class Predictor(BasePredictor):
 
         info_dict = ydl.extract_info(audio_url, download=False)
         video_title = info_dict.get('title', None)
-        # yield Result(file_name=video_title)
+        yield ModelOutput(title=video_title)
 
 
         filename_collector = FilenameCollectorPP()
@@ -168,11 +167,10 @@ class Predictor(BasePredictor):
             save_audio(other_stem.cpu(), out_no_stem, **kwargs)
             output["other"] = Path(out_no_stem)
 
-        return ModelOutput(
+        yield ModelOutput(
             vocals=output["vocals"],
             bass=output["bass"],
             drums=output["drums"],
-            guitar=output["guitar"],
-            piano=output["piano"],
             other=output["other"],
+            title=video_title
         )
