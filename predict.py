@@ -29,7 +29,12 @@ MODELS = [
 
 ydl_opts = {
     'format': 'bestaudio/best',
+    'noplaylist': True
 }
+
+MAX_VIDEO_LENGTH_SECONDS = 10 * 60
+
+# https://www.youtube.com/watch?v=vhAznYpU9Ig&list=PLxA687tYuMWh9sWBuPx_CdtnXGfSR8k_O
 
 def upgrade(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package, "--upgrade"])
@@ -92,7 +97,7 @@ class Predictor(BasePredictor):
             default=False,
         ),
         output_format: str = Input(
-            default="wav",
+            default="mp3",
             choices=["mp3", "wav", "flac"],
             description="Choose the output format",
         ),
@@ -110,6 +115,10 @@ class Predictor(BasePredictor):
         })
 
         info_dict = ydl.extract_info(audio_url, download=False)
+
+        if info_dict['duration'] > MAX_VIDEO_LENGTH_SECONDS:
+            raise Exception('Audio file needs to be under 10 minutes')
+
         video_title = info_dict.get('title', None)
         yield ModelOutput(title=video_title)
 
