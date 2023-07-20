@@ -11,6 +11,7 @@ build:
     - "torch==2.0.1"
     - "torchaudio==2.0.2"
     - "demucs==4.0.0"
+    # - "pydub==0.25.1"
     - ipython
     - "yt-dlp"
   run:

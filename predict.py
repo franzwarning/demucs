@@ -12,19 +12,11 @@ from demucs.apply import apply_model
 from demucs.audio import save_audio
 from demucs.pretrained import get_model
 from demucs.separate import load_track
+import urllib
+# from pydub import AudioSegment
 
 STEMS = ["vocals", "bass", "drums", "guitar", "piano", "other"]
 
-MODELS = [
-    "htdemucs",
-    "htdemucs_ft",
-    "htdemucs_6s",
-    "hdemucs_mmi",
-    "mdx",
-    "mdx_q",
-    "mdx_extra",
-    "mdx_extra_q",
-]
 
 
 ydl_opts = {
@@ -61,26 +53,12 @@ class ModelOutput(BaseModel):
 class Predictor(BasePredictor):
     def setup(self):
         """Load the model into memory to make running multiple predictions efficient"""
-        self.models = {k: get_model(k) for k in MODELS}
+        self.model = get_model('mdx_extra_q')
         upgrade('yt-dlp')
 
     def predict(
         self,
         audio_url: str = Input(description="Audio url", default=None),
-        model_name: str = Input(
-            description="Choose a model", choices=MODELS, default="mdx_extra_q"
-        ),
-        stem: str = Input(
-            default=None,
-            choices=STEMS,
-            description="Only separate audio into the chosen stem and others (no_stem). ",
-        ),
-        clip_mode: str = Input(
-            description="Strategy for avoiding clipping: rescaling entire signal "
-            "if necessary  (rescale) or hard clipping (clamp).",
-            choices=["rescale", "clamp"],
-            default="rescale",
-        ),
         shifts: int = Input(
             description="Number of random shifts for equivariant stabilization."
             "Increase separation time but improves quality for Demucs. 10 was used "
@@ -88,19 +66,6 @@ class Predictor(BasePredictor):
             default=1,
         ),
         overlap: float = Input(default=0.25, description="Overlap between the splits."),
-        mp3_bitrate: int = Input(
-            description="Bitrate of converted mp3",
-            default=320,
-        ),
-        float32: bool = Input(
-            description="Save wav output as float32 (2x bigger).",
-            default=False,
-        ),
-        output_format: str = Input(
-            default="mp3",
-            choices=["mp3", "wav", "flac"],
-            description="Choose the output format",
-        ),
     ) -> Iterator[ModelOutput]:
         """Run a single prediction on the model"""
 
@@ -115,9 +80,19 @@ class Predictor(BasePredictor):
         })
 
         info_dict = ydl.extract_info(audio_url, download=False)
+        duration = info_dict.get('duration')
+        if duration:
+            if duration > MAX_VIDEO_LENGTH_SECONDS:
+                raise Exception('Audio file needs to be under 10 minutes')
+        else:
+            # get size of file
+            req = urllib.request.Request(audio_url, method='HEAD')
+            f = urllib.request.urlopen(req)
+            size = f.headers['Content-Length']
+            size_mb = int(size) / 1000000
+            if size_mb > 50:
+                raise Exception('Audio file needs to be smaller than 50 mb')
 
-        if info_dict['duration'] > MAX_VIDEO_LENGTH_SECONDS:
-            raise Exception('Audio file needs to be under 10 minutes')
 
         video_title = info_dict.get('title', None)
         yield ModelOutput(title=video_title)
@@ -127,17 +102,11 @@ class Predictor(BasePredictor):
         ydl.add_post_processor(filename_collector)
         ydl.download([audio_url])            
 
-        model = self.models[model_name]
-        if stem is not None:
-            assert (
-                stem in model.sources
-            ), f"stem {stem} is not in selected model. Supported stems in {model_name} are {model.sources}"
-
-        wav = load_track(Path(filename_collector.filenames[0]), model.audio_channels, model.samplerate)
+        wav = load_track(Path(filename_collector.filenames[0]), self.model.audio_channels, self.model.samplerate)
         ref = wav.mean(0)
         wav = (wav - ref.mean()) / ref.std()
         sources = apply_model(
-            model,
+            self.model,
             wav[None],
             device="cuda",
             split=True,
@@ -148,33 +117,18 @@ class Predictor(BasePredictor):
         sources = sources * ref.std() + ref.mean()
 
         kwargs = {
-            "samplerate": model.samplerate,
-            "bitrate": mp3_bitrate,
-            "clip": clip_mode,
-            "as_float": float32,
-            "bits_per_sample": 24,
+            "samplerate": self.model.samplerate,
+            "bits_per_sample": 16,
         }
 
         output = {k: None for k in STEMS}
-        if stem is None:
-            for source, name in zip(sources, model.sources):
-                out = f"/tmp/{name}.{output_format}"
-                save_audio(source.cpu(), out, **kwargs)
-                output[name] = Path(out)
-        else:
-            sources = list(sources)
-            out_stem = f"/tmp/{stem}.{output_format}"
-            save_audio(sources[model.sources.index(stem)].cpu(), out_stem, **kwargs)
-            output[stem] = Path(out_stem)
+        for source, name in zip(sources, self.model.sources):
+            wav_out = f"/tmp/{name}.wav"
+            save_audio(source.cpu(), wav_out, **kwargs)
+            # mp3_out = f"/tmp/{name}.mp3"
+            # AudioSegment.from_wav(wav_out).export(mp3_out, format="mp3", bitrate="320k")
 
-            sources.pop(model.sources.index(stem))
-            # Warning : after poping the stem, selected stem is no longer in the list 'sources'
-            other_stem = torch.zeros_like(sources[0])
-            for i in sources:
-                other_stem += i
-            out_no_stem = f"/tmp/others.{output_format}"
-            save_audio(other_stem.cpu(), out_no_stem, **kwargs)
-            output["other"] = Path(out_no_stem)
+            output[name] = Path(wav_out)
 
         yield ModelOutput(
             vocals=output["vocals"],
